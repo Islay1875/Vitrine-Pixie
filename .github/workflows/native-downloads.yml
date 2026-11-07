@@ -26,6 +26,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -49,6 +51,8 @@ jobs:
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -57,8 +61,16 @@ jobs:
           SOURCE_IPA_URL: ${{ inputs.ipa_url }}
           VITRINE_DYLIB_URL: ${{ inputs.vitrine_dylib_url }}
         run: |
-          case "$SOURCE_IPA_URL" in https://*) ;; *) exit 1 ;; esac
-          case "$VITRINE_DYLIB_URL" in https://*) ;; *) echo 'A current Vitrine library is required'; exit 1 ;; esac
+          if [[ ! "$SOURCE_IPA_URL" =~ ^https:// ]]; then
+            echo "::error::SOURCE_IPA_URL is missing or does not start with https://"
+            exit 1
+          fi
+          
+          if [[ ! "$VITRINE_DYLIB_URL" =~ ^https:// ]]; then
+            echo "::error::A current Vitrine library URL (https://) is required for packaging."
+            exit 1
+          fi
+          
           curl --proto '=https' --proto-redir '=https' --location --fail "$SOURCE_IPA_URL" --output "$RUNNER_TEMP/source.ipa"
           curl --proto '=https' --proto-redir '=https' --location --fail "$VITRINE_DYLIB_URL" --output "$RUNNER_TEMP/spotifyglass.dylib"
           mkdir -p outputs/ci-package
